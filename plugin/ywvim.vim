@@ -1,7 +1,7 @@
 " mY oWn VimIM.
 " Author: Wu, Yue <ywupub@163.com>
-" Last Change:	2020-01-14
-" Release Version: 1.27
+" Last Change:	2020-02-04
+" Release Version: 1.29
 " License: BSD
 
 " ~/projects/vimscript/ywvim/changelog
@@ -821,6 +821,7 @@ function s:Ywvim_comp(zhcode,...) "{{{1
 endfunction "}}}
 
 function s:Ywvim_popupfinalresult(list) "{{{1
+    " a:list[0] 码  a:list[1] 序号
     let candtitle = a:list[0] . ' ' . a:list[1]
     let len_candtitle=len(candtitle)
     let popupdisplay = [candtitle]
@@ -878,7 +879,8 @@ function s:Ywvim_popupfinalresult(list) "{{{1
     endif
     let bufnr = winbufnr(s:ywvim_popupwinid)
     if prop_type_get('ywvimCandtBar', {'bufnr': bufnr})=={}
-        call prop_type_add('ywvimCandtBar', {'bufnr': bufnr, 'highlight': 'Visual'})
+        call prop_type_add('ywvimCandtStart', {'bufnr': bufnr, 'highlight': 'IncSearch'})
+        call prop_type_add('ywvimCandtBar', {'bufnr': bufnr, 'highlight': 'ErrorMsg'})
         call prop_type_add('ywvimCandtNr', {'bufnr': bufnr, 'highlight': 'ywvimIMnr'})
         call prop_type_add('ywvimCandtWrd', {'bufnr': bufnr, 'highlight': 'ywvimIMnormal'})
         call prop_type_add('ywvimCandtSuf', {'bufnr': bufnr, 'highlight': 'ywvimIMcode'})
@@ -886,6 +888,7 @@ function s:Ywvim_popupfinalresult(list) "{{{1
     endif
     call prop_add(1, 1, #{
                 \bufnr: bufnr, 
+                \length: len(a:list[0]),
                 \type: 'ywvimCandtBar'
                 \})
     let colstart_nr = s:ywvim_popupwin_horizontal ? popup_textpropdic[0][0]+2 : 1
@@ -972,10 +975,10 @@ function s:Ywvim_NewEnmode() "{{{
         " 10: ESC   13: <RE>    27: <Ctrl-j>
         let enstr = ''
     elseif keycode != char2nr(enmodekey)
-        let ywvim_active_oldmb = b:ywvim_parameters["active_mb"]
+        let b:ywvim_parameters["enmode"] = b:ywvim_parameters["active_mb"]
         let enchar = s:ywvim_{b:ywvim_parameters["active_mb"]}_enchar
         call <SID>Ywvim_LoadNewIM('ywvimenmode')
-        execute 'lnoremap <buffer> <expr> '.enmodekey.' <SID>Ywvim_LoadNewIM("'.ywvim_active_oldmb.'")'
+        execute 'lnoremap <buffer> <expr> '.enmodekey.' <SID>Ywvim_LoadNewIM("'.b:ywvim_parameters["enmode"].'")'
         let enstr = keychar
     elseif s:ywvim_{b:ywvim_parameters["active_mb"]}_zhpunc && has_key(s:ywvim_{b:ywvim_parameters["active_mb"]}_puncdic, enmodekey)
         let enstr = <SID>Ywvim_puncp(enmodekey)
@@ -1073,6 +1076,10 @@ endfunction "}}}
 
 function s:Ywvim_toggle_on(mode) "{{{1
     let b:ywvim_parameters["oldcmdheight"] = &cmdheight
+    if exists('b:ywvim_parameters["enmode"]')
+        let b:ywvim_parameters["active_mb"] = b:ywvim_parameters["enmode"]
+        unlet b:ywvim_parameters["enmode"]
+    endif
     call <SID>Ywvim_loadmb()
     call <SID>Ywvim_keymap('y','a')
     let b:ywvim_parameters["mode"] .= a:mode
